@@ -5,122 +5,90 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <cmath>
+#include <random>
 
-#include "halide_generated.h"
+#include "halide_sgemm_notrans.h"
 #include <HalideRuntime.h>
+
+#include <sstream>
 
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,"halide_native",__VA_ARGS__)
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,"halide_native",__VA_ARGS__)
 
 #define DEBUG 1
 
-extern "C" void halide_set_error_handler(int (*handler)(void *user_context, const char *));
-extern "C" int halide_host_cpu_count();
 extern "C" int64_t halide_current_time_ns();
-extern "C" int halide_copy_to_host(void *, buffer_t *);
-extern "C" int halide_copy_to_dev(void *, buffer_t *);
-extern "C" int halide_dev_malloc(void *, buffer_t *);
-extern "C" int halide_dev_free(void *, buffer_t *);
 
 int handler(void */* user_context */, const char *msg) {
     LOGE("%s", msg);
 }
 
+template<class T>
+struct BenchmarksBase {
+    typedef T Scalar;
+
+    std::random_device rand_dev;
+    std::default_random_engine rand_eng{rand_dev()};
+
+    Scalar random_scalar() {
+        std::uniform_real_distribution<T> uniform_dist(0.0, 1.0);
+        return uniform_dist(rand_eng);
+    }
+
+    buffer_t random_matrix(int N) {
+        Scalar* A = (Scalar*)malloc(N * N * sizeof(Scalar));
+        for (int i=0; i<N*N; ++i) {
+            A[i] = random_scalar();
+        }
+        buffer_t buf_t = {0};
+        buf_t.host = (uint8_t *)A;
+        buf_t.extent[0] = N;
+        buf_t.extent[1] = N;
+        buf_t.extent[2] = 0;
+        buf_t.extent[3] = 0;
+        buf_t.stride[0] = 1;
+        buf_t.stride[1] = N;
+        buf_t.elem_size = sizeof(Scalar);
+        return buf_t;
+    }
+
+    BenchmarksBase() {}
+};
+
+struct BenchmarksFloat : public BenchmarksBase<float> {
+    Scalar a;
+    buffer_t A;
+    buffer_t B;
+    Scalar b;
+    buffer_t C;
+
+    BenchmarksFloat(unsigned N):
+        BenchmarksBase(),
+        a(random_scalar()),
+        A(random_matrix(N)),
+        B(random_matrix(N)),
+        b(random_scalar()),
+        C(random_matrix(N)) {}
+
+    void run() {
+        halide_sgemm_notrans(a, &A, &B, b, &C, &C);
+    }
+};
+
 extern "C" {
-JNIEXPORT void JNICALL Java_com_example_hellohalide_CameraPreview_processFrame(
-    JNIEnv *env, jobject obj, jbyteArray jSrc, jint j_w, jint j_h, jobject surf) {
-
-    const int w = j_w, h = j_h;
-
-    halide_set_error_handler(handler);
-
-    unsigned char *src = (unsigned char *)env->GetByteArrayElements(jSrc, NULL);
-    if (!src) {
-        LOGD("src is null\n");
-        return;
-    }
-
-    ANativeWindow *win = ANativeWindow_fromSurface(env, surf);
-    ANativeWindow_acquire(win);
-
-    static bool first_call = true;
-    static unsigned counter = 0;
-    static unsigned times[16];
-    if (first_call) {
-        LOGD("According to Halide, host system has %d cpus\n", halide_host_cpu_count());
-        LOGD("Resetting buffer format");
-        ANativeWindow_setBuffersGeometry(win, w, h, 0);
-        first_call = false;
-        for (int t = 0; t < 16; t++) times[t] = 0;
-    }
-
-    ANativeWindow_Buffer buf;
-    ARect rect = {0, 0, w, h};
-
-    if (int err = ANativeWindow_lock(win, &buf, NULL)) {
-        LOGD("ANativeWindow_lock failed with error code %d\n", err);
-        return;
-    }
-
-    uint8_t *dst = (uint8_t *)buf.bits;
-
-    // If we're using opencl, use the gpu backend for it.
-    halide_set_ocl_device_type("gpu");
-
-    // Make these static so that we can reuse device allocations across frames.
-    static buffer_t srcBuf = {0};
-    static buffer_t dstBuf = {0};
-
-    if (dst) {
-        srcBuf.host = (uint8_t *)src;
-        srcBuf.host_dirty = true;
-        srcBuf.extent[0] = w;
-        srcBuf.extent[1] = h;
-        srcBuf.extent[2] = 0;
-        srcBuf.extent[3] = 0;
-        srcBuf.stride[0] = 1;
-        srcBuf.stride[1] = w;
-        srcBuf.min[0] = 0;
-        srcBuf.min[1] = 0;
-        srcBuf.elem_size = 1;
-
-        dstBuf.host = dst;
-        dstBuf.extent[0] = w;
-        dstBuf.extent[1] = h;
-        dstBuf.extent[2] = 0;
-        dstBuf.extent[3] = 0;
-        dstBuf.stride[0] = 1;
-        dstBuf.stride[1] = w;
-        dstBuf.min[0] = 0;
-        dstBuf.min[1] = 0;
-        dstBuf.elem_size = 1;
-
-        // Just copy over chrominance untouched
-        memcpy(dst + w*h, src + w*h, (w*h)/2);
-
-        int64_t t1 = halide_current_time_ns();
-        halide_generated(&srcBuf, &dstBuf);
-
-        if (dstBuf.dev) {
-            halide_copy_to_host(NULL, &dstBuf);
-        }
-
-        int64_t t2 = halide_current_time_ns();
-        unsigned elapsed_us = (t2 - t1)/1000;
-
-
-        times[counter & 15] = elapsed_us;
-        counter++;
-        unsigned min = times[0];
-        for (int i = 1; i < 16; i++) {
-            if (times[i] < min) min = times[i];
-        }
-        LOGD("Time taken: %d (%d)", elapsed_us, min);
-    }
-
-    ANativeWindow_unlockAndPost(win);
-    ANativeWindow_release(win);
-
-    env->ReleaseByteArrayElements(jSrc, (jbyte *)src, 0);
+JNIEXPORT jstring JNICALL Java_com_example_hellohalide_BenchmarkActivity_runTest(
+    JNIEnv *env, jobject callingObject, jint size) {
+    LOGD("Ready to run with size: %d", size);
+    BenchmarksFloat bf(size);
+    int64_t t1 = halide_current_time_ns();
+    bf.run();
+    int64_t t2 = halide_current_time_ns();
+    unsigned elapsed_us = (t2 - t1)/1000;
+    LOGD("For %d size time taken: %d", size, elapsed_us);
+    std::ostringstream ss;
+    ss << "For " << size << " time taken is " << elapsed_us << "ns";
+    return env->NewStringUTF(ss.str().c_str());
 }
+
 }

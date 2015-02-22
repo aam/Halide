@@ -2,14 +2,22 @@ package com.example.hellohalide;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 
 public class BenchmarkActivity extends Activity {
+
+    // Link to native Halide code
+    static {
+        System.loadLibrary("native");
+    }
+    private static native String runTest(int size);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,7 +28,13 @@ public class BenchmarkActivity extends Activity {
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                stats.append("Got it\n");
+                int sizes[] = {32, 64, 128, 288, 544, 1056, 2080};
+
+                for (int size: sizes) {
+                    Log.i("BenchmarkActivity", "Starting with size " + size);
+                    String result = runTest(size);
+                    stats.append(result + "\n");
+                }
             }
         });
     }
