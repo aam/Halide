@@ -1278,6 +1278,37 @@ Func &Func::glsl(Var x, Var y, Var c) {
     return *this;
 }
 
+Func &Func::rs(Var x, Var y, Var c) {
+    // TODO(aam): cloned from glsl. Refactor.
+    reorder(c, x, y);
+    // RS outputs must be stored interleaved
+    reorder_storage(c, x, y);
+
+    // TODO: Set appropriate constraints if this is the output buffer?
+
+    Stage(func.schedule(), name()).gpu_blocks(x, y, DeviceAPI::RS);
+
+    bool constant_bounds = false;
+    Schedule &sched = func.schedule();
+    for (size_t i = 0; i < sched.bounds().size(); i++) {
+        if (c.name() == sched.bounds()[i].var) {
+            constant_bounds = is_const(sched.bounds()[i].min) &&
+                              is_const(sched.bounds()[i].extent);
+            break;
+        }
+    }
+    user_assert(constant_bounds) << "The color channel for RS loops must "
+                                    "have constant bounds, e.g., .bound(c, 0, "
+                                    "3).\n";
+    //    vectorize(c);
+    return *this;
+}
+
+Func &Func::rs(Var x, Var y) {
+    Stage(func.schedule(), name()).gpu_blocks(x, y, DeviceAPI::RS);
+    return *this;
+}
+
 Func &Func::reorder_storage(Var x, Var y) {
     invalidate_cache();
 

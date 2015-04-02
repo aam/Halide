@@ -391,6 +391,8 @@ struct Call : public ExprNode<Call> {
         glsl_texture_load,
         glsl_texture_store,
         glsl_varying,
+        gl_texture_load,
+        gl_texture_store,
         make_struct,
         stringify,
         memoize_expr,

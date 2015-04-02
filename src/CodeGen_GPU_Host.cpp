@@ -4,6 +4,7 @@
 #include "CodeGen_PTX_Dev.h"
 #include "CodeGen_OpenCL_Dev.h"
 #include "CodeGen_OpenGL_Dev.h"
+#include "CodeGen_RS_Dev.h"
 #include "IROperator.h"
 #include "IRPrinter.h"
 #include "Debug.h"
@@ -117,7 +118,9 @@ protected:
     void visit(const Call *op) {
         if (op->call_type == Call::Intrinsic &&
             (op->name == Call::glsl_texture_load ||
-             op->name == Call::glsl_texture_store)) {
+             op->name == Call::glsl_texture_store ||
+             op->name == Call::gl_texture_load ||
+             op->name == Call::gl_texture_store)) {
 
             // The argument to the call is either a StringImm or a broadcasted
             // StringImm if this is part of a vectorized expression
@@ -135,9 +138,11 @@ protected:
             ref.type = op->type;
             // TODO: do we need to set ref.dimensions?
 
-            if (op->name == Call::glsl_texture_load) {
+            if (op->name == Call::glsl_texture_load 
+                || op->name == Call::gl_texture_load) {
                 ref.read = true;
-            } else if (op->name == Call::glsl_texture_store) {
+            } else if (op->name == Call::glsl_texture_store
+                || op->name == Call::gl_texture_store) {
                 ref.write = true;
             }
 
@@ -205,6 +210,11 @@ CodeGen_GPU_Host<CodeGen_CPU>::CodeGen_GPU_Host(Target target) : CodeGen_CPU(tar
         debug(1) << "Constructing OpenCL device codegen\n";
         cgdev[DeviceAPI::OpenCL] = new CodeGen_OpenCL_Dev(target);
         default_api = DeviceAPI::OpenCL;
+    }
+    if (target.has_feature(Target::RS)) {
+        debug(1) << "Constructing RS device codegen\n";
+        cgdev[DeviceAPI::RS] = new CodeGen_RS_Dev(target);
+        default_api = DeviceAPI::RS;
     }
 
     if (cgdev.empty()) {
@@ -375,6 +385,7 @@ void CodeGen_GPU_Host<CodeGen_CPU>::visit(const For *loop) {
         }
 
         for (size_t i = 0; i < closure_args.size(); i++) {
+            debug(1) << "CodeGen_GPU_Host closure_args[" << i << "].is_buffer=" << closure_args[i].is_buffer << "\n";
             if (closure_args[i].is_buffer && allocations.contains(closure_args[i].name)) {
                 closure_args[i].size = allocations.get(closure_args[i].name).constant_bytes;
             }

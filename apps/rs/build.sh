@@ -1,0 +1,1 @@
+pushd ../.. && make -j8 && popd && g++ -I/usr/local/include/libpng16 -I ../../include/ testrs.cpp -L ../../bin/ -L/usr/local/lib -lpng16 -lHalide -o testrs -g && DYLD_LIBRARY_PATH=../../bin HL_DEBUG_CODEGEN=4 WITH_RS=1 HL_TARGET=arm-32-android-armv7s-rs-debug ./testrs 2> rs-out
