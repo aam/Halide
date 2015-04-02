@@ -1,7 +1,8 @@
 Halide Renderscript application "blur" example
+===
 
 Building
-===
+---
 
 ```
 $ ./build.sh
@@ -11,9 +12,16 @@ $
 ```
 
 Running
-===
-Running this sample requires android ndk in the path.
+---
+Connected Android device needs to be "rooted", following initial set up needs to be done on the device. You will need Android sdk in the path:
+```
+adb shell
+su
+mkdir /data/tmp
+mount -o remount,rw /system
+```
 
+Once folder /data/tmp is created with write permissions, continue with example execution. You will need to have android ndk in the path:
 ```
 $ ./run.sh
 ...
