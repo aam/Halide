@@ -1,7 +1,8 @@
 Halide Renderscript application "blur" example
+===
 
 Building
-===
+---
 
 ```
 $ ./build.sh
@@ -11,7 +12,7 @@ $
 ```
 
 Running
-===
+---
 Connected Android device needs to be "rooted", following initial set up needs to be done on the device. You will need Android sdk in the path:
 ```
 adb shell
