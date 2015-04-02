@@ -416,7 +416,7 @@ llvm::Module *CodeGen_LLVM::compile(const Module &input) {
     argument_t_type = module->getTypeByName("struct.halide_filter_argument_t");
     internal_assert(argument_t_type) << "Did not find halide_filter_argument_t in initial module";
 
-    scalar_value_t_type = module->getTypeByName("union.halide_scalar_value_t");
+    scalar_value_t_type = module->getTypeByName("struct.halide_scalar_value_t");
     internal_assert(scalar_value_t_type) << "Did not find halide_scalar_value_t in initial module";
 
 
@@ -622,7 +622,7 @@ namespace {
 
 template<typename T>
 llvm::Constant *get_constant(llvm::Type *ty, Expr e) {
-    T v;
+    T v = 0;
     internal_assert(scalar_from_constant_expr<T>(e, &v)) << "scalar_from_constant_expr fails for Expr " << e << "\n";
     return std::numeric_limits<T>::is_integer ? ConstantInt::get(ty, v) : ConstantFP::get(ty, v);
 }
