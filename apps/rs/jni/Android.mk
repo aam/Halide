@@ -5,7 +5,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := RS
-LOCAL_SRC_FILES := /Volumes/android/trunk/out/target/product/shamu/system/lib/libRS.so
+LOCAL_SRC_FILES := prebuilt/libRS.so
 
 include $(PREBUILT_SHARED_LIBRARY)
 

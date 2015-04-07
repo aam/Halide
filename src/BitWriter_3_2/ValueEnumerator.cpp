@@ -15,6 +15,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
@@ -31,20 +32,21 @@ static bool isIntOrIntVectorValue(const std::pair<const Value*, unsigned> &V) {
 }
 
 /// ValueEnumerator - Enumerate module-level information.
-ValueEnumerator::ValueEnumerator(const Module *M) {
+ValueEnumerator::ValueEnumerator(const llvm::Module &M)
+    : HasMDString(false), HasMDLocation(false) {
   // Enumerate the global variables.
-  for (Module::const_global_iterator I = M->global_begin(),
-         E = M->global_end(); I != E; ++I)
+  for (llvm::Module::const_global_iterator I = M.global_begin(), E = M.global_end();
+       I != E; ++I)
     EnumerateValue(I);
 
   // Enumerate the functions.
-  for (Module::const_iterator I = M->begin(), E = M->end(); I != E; ++I) {
+  for (llvm::Module::const_iterator I = M.begin(), E = M.end(); I != E; ++I) {
     EnumerateValue(I);
     EnumerateAttributes(cast<Function>(I)->getAttributes());
   }
 
   // Enumerate the aliases.
-  for (Module::const_alias_iterator I = M->alias_begin(), E = M->alias_end();
+  for (llvm::Module::const_alias_iterator I = M.alias_begin(), E = M.alias_end();
        I != E; ++I)
     EnumerateValue(I);
 
@@ -52,53 +54,40 @@ ValueEnumerator::ValueEnumerator(const Module *M) {
   unsigned FirstConstant = Values.size();
 
   // Enumerate the global variable initializers.
-  for (Module::const_global_iterator I = M->global_begin(),
-         E = M->global_end(); I != E; ++I)
+  for (llvm::Module::const_global_iterator I = M.global_begin(), E = M.global_end();
+       I != E; ++I)
     if (I->hasInitializer())
       EnumerateValue(I->getInitializer());
 
   // Enumerate the aliasees.
-  for (Module::const_alias_iterator I = M->alias_begin(), E = M->alias_end();
+  for (llvm::Module::const_alias_iterator I = M.alias_begin(), E = M.alias_end();
        I != E; ++I)
     EnumerateValue(I->getAliasee());
-
-  // Enumerate the prefix data constants.
-  for (Module::const_iterator I = M->begin(), E = M->end(); I != E; ++I)
-    if (I->hasPrefixData())
-      EnumerateValue(I->getPrefixData());
-
-  // Enumerate the prologue data constants.
-  for (Module::const_iterator I = M->begin(), E = M->end(); I != E; ++I)
-    if (I->hasPrologueData())
-      EnumerateValue(I->getPrologueData());
 
   // Enumerate the metadata type.
   //
   // TODO: Move this to ValueEnumerator::EnumerateOperandType() once bitcode
   // only encodes the metadata type when it's used as a value.
-  EnumerateType(Type::getMetadataTy(M->getContext()));
+  EnumerateType(Type::getMetadataTy(M.getContext()));
 
-  // Insert constants and metadata that are named at module level into the slot 
+  // Insert constants and metadata that are named at module level into the slot
   // pool so that the module symbol table can refer to them...
-  EnumerateValueSymbolTable(M->getValueSymbolTable());
+  EnumerateValueSymbolTable(M.getValueSymbolTable());
   EnumerateNamedMetadata(M);
 
-  SmallVector<std::pair<unsigned, MDNode*>, 8> MDs;
+  SmallVector<std::pair<unsigned, MDNode *>, 8> MDs;
 
   // Enumerate types used by function bodies and argument lists.
-  for (Module::const_iterator F = M->begin(), E = M->end(); F != E; ++F) {
+  for (const Function &F : M) {
+    for (const Argument &A : F.args())
+      EnumerateType(A.getType());
 
-    for (Function::const_arg_iterator I = F->arg_begin(), E = F->arg_end();
-         I != E; ++I)
-      EnumerateType(I->getType());
-
-    for (Function::const_iterator BB = F->begin(), E = F->end(); BB != E; ++BB)
-      for (BasicBlock::const_iterator I = BB->begin(), E = BB->end(); I!=E;++I){
-        for (User::const_op_iterator OI = I->op_begin(), E = I->op_end();
-             OI != E; ++OI) {
-          auto *MD = dyn_cast<llvm::MetadataAsValue>(*OI);
+    for (const BasicBlock &BB : F)
+      for (const Instruction &I : BB) {
+        for (const Use &Op : I.operands()) {
+          auto *MD = dyn_cast<MetadataAsValue>(&Op);
           if (!MD) {
-            EnumerateOperandType(*OI);
+            EnumerateOperandType(Op);
             continue;
           }
 
@@ -108,22 +97,22 @@ ValueEnumerator::ValueEnumerator(const Module *M) {
 
           EnumerateMetadata(MD->getMetadata());
         }
-        EnumerateType(I->getType());
-        if (const CallInst *CI = dyn_cast<CallInst>(I))
+        EnumerateType(I.getType());
+        if (const CallInst *CI = dyn_cast<CallInst>(&I))
           EnumerateAttributes(CI->getAttributes());
-        else if (const InvokeInst *II = dyn_cast<InvokeInst>(I))
+        else if (const InvokeInst *II = dyn_cast<InvokeInst>(&I))
           EnumerateAttributes(II->getAttributes());
 
         // Enumerate metadata attached with this instruction.
         MDs.clear();
-        I->getAllMetadataOtherThanDebugLoc(MDs);
+        I.getAllMetadataOtherThanDebugLoc(MDs);
         for (unsigned i = 0, e = MDs.size(); i != e; ++i)
           EnumerateMetadata(MDs[i].second);
 
-        if (!I->getDebugLoc().isUnknown()) {
-          MDNode *Scope, *IA;
-          I->getDebugLoc().getScopeAndInlinedAt(Scope, IA, I->getContext());
+        if (I.getDebugLoc()) {
+          MDNode* Scope = I.getDebugLoc().getScope();
           if (Scope) EnumerateMetadata(Scope);
+          MDLocation *IA = I.getDebugLoc().getInlinedAt();
           if (IA) EnumerateMetadata(IA);
         }
       }
@@ -152,12 +141,6 @@ unsigned ValueEnumerator::getValueID(const Value *V) const {
   return I->second-1;
 }
 
-unsigned ValueEnumerator::getMetadataID(const Metadata *MD) const {
-  auto I = MDValueMap.find(MD);
-  assert(I != MDValueMap.end() && "Metadata not in slotcalculator!");
-  return I->second - 1;
-}
-
 void ValueEnumerator::dump() const {
   print(dbgs(), ValueMap, "Default");
   dbgs() << '\n';
@@ -181,12 +164,11 @@ void ValueEnumerator::print(raw_ostream &OS, const ValueMapType &Map,
     V->dump();
 
     OS << " Uses(" << std::distance(V->use_begin(),V->use_end()) << "):";
-    for (Value::const_use_iterator UI = V->use_begin(), UE = V->use_end();
-         UI != UE; ++UI) {
-      if (UI != V->use_begin())
+    for (const Use &U : V->uses()) {
+      if (&U != &*V->use_begin())
         OS << ",";
-      if((*UI)->hasName())
-        OS << " " << (*UI)->getName();
+      if(U->hasName())
+        OS << " " << U->getName();
       else
         OS << " [null]";
 
@@ -195,17 +177,18 @@ void ValueEnumerator::print(raw_ostream &OS, const ValueMapType &Map,
   }
 }
 
-void ValueEnumerator::print(raw_ostream &OS, const MetadataMapType &Map,
+void ValueEnumerator::print(llvm::raw_ostream &OS, const MetadataMapType &Map,
                             const char *Name) const {
 
   OS << "Map Name: " << Name << "\n";
   OS << "Size: " << Map.size() << "\n";
   for (auto I = Map.begin(), E = Map.end(); I != E; ++I) {
-    const Metadata *MD = I->first;
+    const llvm::Metadata *MD = I->first;
     OS << "Metadata: slot = " << I->second << "\n";
-    MD->dump();
+    MD->print(OS);
   }
 }
+
 
 // Optimize constant ordering.
 namespace {
@@ -253,9 +236,10 @@ void ValueEnumerator::EnumerateValueSymbolTable(const ValueSymbolTable &VST) {
 
 /// EnumerateNamedMetadata - Insert all of the values referenced by
 /// named metadata in the specified module.
-void ValueEnumerator::EnumerateNamedMetadata(const Module *M) {
-  for (Module::const_named_metadata_iterator I = M->named_metadata_begin(),
-       E = M->named_metadata_end(); I != E; ++I)
+void ValueEnumerator::EnumerateNamedMetadata(const llvm::Module &M) {
+  for (llvm::Module::const_named_metadata_iterator I = M.named_metadata_begin(),
+                                             E = M.named_metadata_end();
+       I != E; ++I)
     EnumerateNamedMDNode(I);
 }
 
@@ -269,20 +253,14 @@ void ValueEnumerator::EnumerateNamedMDNode(const NamedMDNode *MD) {
 void ValueEnumerator::EnumerateMDNodeOperands(const MDNode *N) {
   for (unsigned i = 0, e = N->getNumOperands(); i != e; ++i) {
     Metadata *MD = N->getOperand(i);
-    if (!MD) {
-      EnumerateType(Type::getVoidTy(N->getContext()));
+    if (!MD)
       continue;
-    }
     assert(!isa<LocalAsMetadata>(MD) && "MDNodes cannot be function-local");
-    if (auto *C = dyn_cast<ConstantAsMetadata>(MD)) {
-      EnumerateValue(C->getValue());
-      continue;
-    }
     EnumerateMetadata(MD);
   }
 }
 
-void ValueEnumerator::EnumerateMetadata(const Metadata *MD) {
+void ValueEnumerator::EnumerateMetadata(const llvm::Metadata *MD) {
   assert(
       (isa<MDNode>(MD) || isa<MDString>(MD) || isa<ConstantAsMetadata>(MD)) &&
       "Invalid metadata kind");
@@ -300,6 +278,9 @@ void ValueEnumerator::EnumerateMetadata(const Metadata *MD) {
   else if (auto *C = dyn_cast<ConstantAsMetadata>(MD))
     EnumerateValue(C->getValue());
 
+  HasMDString |= isa<MDString>(MD);
+  HasMDLocation |= isa<MDLocation>(MD);
+
   // Replace the dummy ID inserted above with the correct one.  MDValueMap may
   // have changed by inserting operands, so we need a fresh lookup here.
   MDs.push_back(MD);
@@ -309,7 +290,7 @@ void ValueEnumerator::EnumerateMetadata(const Metadata *MD) {
 /// EnumerateFunctionLocalMetadataa - Incorporate function-local metadata
 /// information reachable from the metadata.
 void ValueEnumerator::EnumerateFunctionLocalMetadata(
-    const LocalAsMetadata *Local) {
+    const llvm::LocalAsMetadata *Local) {
   // Check to see if it's already in!
   unsigned &MDValueID = MDValueMap[Local];
   if (MDValueID)
@@ -396,9 +377,8 @@ void ValueEnumerator::EnumerateType(Type *Ty) {
 
   // Enumerate all of the subtypes before we enumerate this type.  This ensures
   // that the type will be enumerated in an order that can be directly built.
-  for (Type::subtype_iterator I = Ty->subtype_begin(), E = Ty->subtype_end();
-       I != E; ++I)
-    EnumerateType(*I);
+  for (Type *SubTy : Ty->subtypes())
+    EnumerateType(SubTy);
 
   // Refresh the TypeID pointer in case the table rehashed.
   TypeID = &TypeMap[Ty];
@@ -509,13 +489,13 @@ void ValueEnumerator::incorporateFunction(const Function &F) {
 
   FirstInstID = Values.size();
 
-  SmallVector<LocalAsMetadata *, 8> FnLocalMDVector;
+  SmallVector<llvm::LocalAsMetadata *, 8> FnLocalMDVector;
   // Add all of the instructions.
   for (Function::const_iterator BB = F.begin(), E = F.end(); BB != E; ++BB) {
     for (BasicBlock::const_iterator I = BB->begin(), E = BB->end(); I!=E; ++I) {
       for (User::const_op_iterator OI = I->op_begin(), E = I->op_end();
            OI != E; ++OI) {
-        if (auto *MD = dyn_cast<MetadataAsValue>(&*OI))
+        if (auto *MD = dyn_cast<llvm::MetadataAsValue>(&*OI))
           if (auto *Local = dyn_cast<LocalAsMetadata>(MD->getMetadata()))
             // Enumerate metadata after the instructions they might refer to.
             FnLocalMDVector.push_back(Local);

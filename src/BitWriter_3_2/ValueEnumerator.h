@@ -17,6 +17,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Attributes.h"
+#include "llvm/IR/UseListOrder.h"
 #include <vector>
 
 namespace llvm {
@@ -46,6 +47,8 @@ public:
 
   // For each value, we remember its Value* and occurrence frequency.
   typedef std::vector<std::pair<const llvm::Value*, unsigned> > ValueList;
+
+  llvm::UseListOrderStack UseListOrders;
 private:
   typedef llvm::DenseMap<llvm::Type*, unsigned> TypeMapType;
   TypeMapType TypeMap;
@@ -54,10 +57,14 @@ private:
   typedef llvm::DenseMap<const llvm::Value*, unsigned> ValueMapType;
   ValueMapType ValueMap;
   ValueList Values;
+
+
   std::vector<const llvm::Metadata *> MDs;
   llvm::SmallVector<const llvm::LocalAsMetadata *, 8> FunctionLocalMDs;
   typedef llvm::DenseMap<const llvm::Metadata *, unsigned> MetadataMapType;
   MetadataMapType MDValueMap;
+  bool HasMDString;
+  bool HasMDLocation;
 
   typedef llvm::DenseMap<llvm::AttributeSet, unsigned> AttributeGroupMapType;
   AttributeGroupMapType AttributeGroupMap;
@@ -90,10 +97,10 @@ private:
   unsigned FirstFuncConstantID;
   unsigned FirstInstID;
 
-  ValueEnumerator(const ValueEnumerator &);  // DO NOT IMPLEMENT
-  void operator=(const ValueEnumerator &);   // DO NOT IMPLEMENT
+  ValueEnumerator(const ValueEnumerator &) = delete;
+  void operator=(const ValueEnumerator &) = delete;
 public:
-  ValueEnumerator(const llvm::Module *M);
+  ValueEnumerator(const llvm::Module &M);
 
   void dump() const;
   void print(llvm::raw_ostream &OS, const ValueMapType &Map, const char *Name) const;
@@ -101,7 +108,17 @@ public:
              const char *Name) const;
 
   unsigned getValueID(const llvm::Value *V) const;
-  unsigned getMetadataID(const llvm::Metadata *V) const;
+  unsigned getMetadataID(const llvm::Metadata *MD) const {
+    auto ID = getMetadataOrNullID(MD);
+    assert(ID != 0 && "Metadata not in slotcalculator!");
+    return ID - 1;
+  }
+  unsigned getMetadataOrNullID(const llvm::Metadata *MD) const {
+    return MDValueMap.lookup(MD);
+  }
+
+  bool hasMDString() const { return HasMDString; }
+  bool hasMDLocation() const { return HasMDLocation; }
 
   unsigned getTypeID(llvm::Type *T) const {
     TypeMapType::const_iterator I = TypeMap.find(T);
@@ -135,7 +152,7 @@ public:
 
   const ValueList &getValues() const { return Values; }
   const std::vector<const llvm::Metadata *> &getMDs() const { return MDs; }
-  const llvm::SmallVector<const llvm::LocalAsMetadata *, 8> &getFunctionLocalMDs() const {
+  const llvm::SmallVectorImpl<const llvm::LocalAsMetadata *> &getFunctionLocalMDs() const {
     return FunctionLocalMDs;
   }
   const TypeList &getTypes() const { return Types; }
@@ -173,7 +190,7 @@ private:
   void EnumerateAttributes(llvm::AttributeSet PAL);
 
   void EnumerateValueSymbolTable(const llvm::ValueSymbolTable &ST);
-  void EnumerateNamedMetadata(const llvm::Module *M);
+  void EnumerateNamedMetadata(const llvm::Module &M);
 };
 
 }  // End llvm_3_2 namespace
