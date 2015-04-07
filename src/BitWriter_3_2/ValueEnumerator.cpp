@@ -15,7 +15,9 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/IR/Constants.h"
+#if LLVM_VERSION >= 37
 #include "llvm/IR/DebugInfoMetadata.h"
+#endif
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
@@ -109,12 +111,21 @@ ValueEnumerator::ValueEnumerator(const llvm::Module &M)
         for (unsigned i = 0, e = MDs.size(); i != e; ++i)
           EnumerateMetadata(MDs[i].second);
 
+#if LLVM_VERSION >= 37
         if (I.getDebugLoc()) {
           MDNode* Scope = I.getDebugLoc().getScope();
           if (Scope) EnumerateMetadata(Scope);
           MDLocation *IA = I.getDebugLoc().getInlinedAt();
           if (IA) EnumerateMetadata(IA);
         }
+#else
+        if (!I.getDebugLoc().isUnknown()) {
+          MDNode *Scope, *IA;
+          I.getDebugLoc().getScopeAndInlinedAt(Scope, IA, I.getContext());
+          if (Scope) EnumerateMetadata(Scope);
+          if (IA) EnumerateMetadata(IA);
+        }
+#endif
       }
   }
 

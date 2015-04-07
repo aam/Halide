@@ -18,7 +18,9 @@
 #include "llvm/Bitcode/BitstreamWriter.h"
 #include "llvm/Bitcode/LLVMBitCodes.h"
 #include "llvm/IR/Constants.h"
+#if LLVM_VERSION >= 37
 #include "llvm/IR/DebugInfoMetadata.h"
+#endif
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instructions.h"
@@ -602,7 +604,8 @@ static void WriteMDTuple(const MDTuple *N, const llvm_3_2::ValueEnumerator &VE,
   Record.clear();
 }
 
-/*static void WriteMDLocation(const MDLocation *N, const llvm_3_2::ValueEnumerator &VE,
+#if LLVM_VERSION < 37
+static void WriteMDLocation(const MDLocation *N, const llvm_3_2::ValueEnumerator &VE,
                             BitstreamWriter &Stream,
                             SmallVectorImpl<uint64_t> &Record,
                             unsigned Abbrev) {
@@ -615,7 +618,9 @@ static void WriteMDTuple(const MDTuple *N, const llvm_3_2::ValueEnumerator &VE,
   Stream.EmitRecord(bitc::METADATA_LOCATION, Record, Abbrev);
   Record.clear();
 }
+#endif
 
+/*
 static void WriteGenericDebugNode(const GenericDebugNode *,
                                   const llvm_3_2::ValueEnumerator &, BitstreamWriter &,
                                   SmallVectorImpl<uint64_t> &, unsigned) {
@@ -669,6 +674,9 @@ static void WriteModuleMetadata(const Module *M,
   }
 
   unsigned MDTupleAbbrev = 0;
+#if LLVM_VERSION < 37
+  unsigned MDLocationAbbrev = 0;
+#endif
   //unsigned GenericDebugNodeAbbrev = 0;
   SmallVector<uint64_t, 64> Record;
   for (const Metadata *MD : MDs) {
@@ -676,11 +684,18 @@ static void WriteModuleMetadata(const Module *M,
       switch (N->getMetadataID()) {
       default:
         llvm_unreachable("Invalid MDNode subclass");
+#if LLVM_VERSION >= 37
 #define HANDLE_SPECIALIZED_MDNODE_LEAF(CLASS)
 #define HANDLE_MDNODE_LEAF(CLASS)                                              \
   case Metadata::CLASS##Kind:                                                  \
     Write##CLASS(cast<CLASS>(N), VE, Stream, Record, CLASS##Abbrev);           \
     continue;
+#else
+#define HANDLE_UNIQUABLE_LEAF(CLASS)                                           \
+  case Metadata::CLASS##Kind:                                                  \
+    Write##CLASS(cast<CLASS>(N), VE, Stream, Record, CLASS##Abbrev);           \
+    continue;
+#endif
 #include "llvm/IR/Metadata.def"
       }
     }
@@ -1532,15 +1547,26 @@ static void WriteFunction(const Function &F, llvm_3_2::ValueEnumerator &VE,
 
       // If the instruction has a debug location, emit it.
       DebugLoc DL = I->getDebugLoc();
+#if LLVM_VERSION >= 37
       if (!DL) {
+#else
+      if (DL.isUnknown()) {
+#endif
         // nothing todo.
       } else if (DL == LastDL) {
         // Just repeat the same debug loc as last time.
         Stream.EmitRecord(bitc::FUNC_CODE_DEBUG_LOC_AGAIN, Vals);
       } else {
+
+#if LLVM_VERSION >= 37
         MDNode* Scope = DL.getScope();
         assert(Scope && "Expected valid scope");
         MDLocation *IA = DL.getInlinedAt();
+#else
+        MDNode *Scope, *IA;
+        DL.getScopeAndInlinedAt(Scope, IA, I->getContext());
+        assert(Scope && "Expected valid scope");
+#endif
 
         Vals.push_back(DL.getLine());
         Vals.push_back(DL.getCol());
