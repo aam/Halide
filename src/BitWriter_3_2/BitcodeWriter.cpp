@@ -14,25 +14,25 @@
 #include "ReaderWriter_3_2.h"
 #include "legacy_bitcode.h"
 #include "ValueEnumerator.h"
-#include "llvm/ADT/Triple.h"
-#include "llvm/Bitcode/BitstreamWriter.h"
-#include "llvm/Bitcode/LLVMBitCodes.h"
-#include "llvm/IR/Constants.h"
+#include <llvm/ADT/Triple.h>
+#include <llvm/Bitcode/BitstreamWriter.h>
+#include <llvm/Bitcode/LLVMBitCodes.h>
+#include <llvm/IR/Constants.h>
 #if LLVM_VERSION >= 37
-#include "llvm/IR/DebugInfoMetadata.h"
+#include <llvm/IR/DebugInfoMetadata.h>
 #endif
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/InlineAsm.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Operator.h"
-#include "llvm/IR/UseListOrder.h"
-#include "llvm/IR/ValueSymbolTable.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/MathExtras.h"
-#include "llvm/Support/Program.h"
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/InlineAsm.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Operator.h>
+#include <llvm/IR/UseListOrder.h>
+#include <llvm/IR/ValueSymbolTable.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/ErrorHandling.h>
+#include <llvm/Support/MathExtras.h>
+#include <llvm/Support/Program.h>
+#include <llvm/Support/raw_ostream.h>
 #include <cctype>
 #include <map>
 using namespace llvm;
@@ -1144,7 +1144,7 @@ static void WriteInstruction(const Instruction &I, unsigned InstID,
     break;
 
   case Instruction::GetElementPtr:
-    Code = bitc::FUNC_CODE_INST_GEP;
+    Code = bitc::FUNC_CODE_INST_GEP_OLD;
     if (cast<GEPOperator>(&I)->isInBounds())
       #if LLVM_VERSION < 37
       Code = bitc::FUNC_CODE_INST_INBOUNDS_GEP;

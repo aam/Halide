@@ -12,10 +12,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "ReaderWriter_3_2.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
-#include "llvm/Pass.h"
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Pass.h>
 using namespace llvm;
 
 namespace {

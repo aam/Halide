@@ -14,10 +14,10 @@
 #ifndef VALUE_ENUMERATOR_H
 #define VALUE_ENUMERATOR_H
 
-#include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/IR/Attributes.h"
-#include "llvm/IR/UseListOrder.h"
+#include <llvm/ADT/DenseMap.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/IR/Attributes.h>
+#include <llvm/IR/UseListOrder.h>
 #include <vector>
 
 namespace llvm {

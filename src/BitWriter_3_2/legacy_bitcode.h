@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "llvm/IR/Attributes.h"
+#include <llvm/IR/Attributes.h>
 
 // Shared functionality for legacy function attribute encoding.
 static inline uint64_t encodeLLVMAttributesForBitcode(llvm::AttributeSet A,
