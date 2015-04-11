@@ -288,6 +288,8 @@ bool Target::merge_string(const std::string &target) {
             set_feature(Target::RS);            
         } else if (tok == "user_context") {
             set_feature(Target::UserContext);
+        } else if (tok == "register_metadata") {
+            set_feature(Target::RegisterMetadata);
         } else if (tok == "no_asserts") {
             set_feature(Target::NoAsserts);
         } else if (tok == "no_bounds_query") {
@@ -359,7 +361,8 @@ std::string Target::to_string() const {
       "opencl", "cl_doubles",
       "opengl",
       "rs",
-      "user_context"
+      "user_context",
+      "register_metadata"
   };
   internal_assert(sizeof(feature_names) / sizeof(feature_names[0]) == FeatureEnd);
   string result = string(arch_names[arch])
