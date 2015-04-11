@@ -370,6 +370,47 @@ void CodeGen_RS_Dev::visit(const Free *f) {
 
 void CodeGen_RS_Dev::visit(const Call *op) {
     if (op->call_type == Call::Intrinsic) {
+
+    // gpu_coordinate_store(
+    //     x4("result"),
+    //     x4(result.buffer),
+    //     x4((result.s0.x.__block_id_x + result.min.0)),
+    //     x4((result.s0.y.__block_id_y + result.min.1)),
+    //     ramp(0, 1, 4),
+    //     (((
+    //         (
+    //             (
+    //                 (
+    //                     gpu_coordinate_load(
+    //                         x4("input"),
+    //                         x4("input"),
+    //                         x4(input.buffer),
+    //                         x4((t22.s - input.min.0)),
+    //                         x4((t23.s - input.min.1)),
+    //                         ramp(0, 1, 4)
+    //                     ) 
+    //                     + gpu_coordinate_load(
+    //                         x4("input"),
+    //                         x4("input"),
+    //                         x4(input.buffer),
+    //                         x4((t24.s - input.min.0)),
+    //                         x4((t23.s - input.min.1)),
+    //                         ramp(0, 1, 4))
+    //                 )
+    //                 + gpu_coordinate_load(
+    //                     x4("input"),
+    //                     x4("input"),
+    //                     x4(input.buffer),
+    //                     x4((t25.s - input.min.0)),
+    //                     x4((t23.s - input.min.1)),
+    //                     ramp(0, 1, 4)
+    //                 )
+    //             )/x4(uint8(3))
+    //         ) 
+    //         + 
+    //         (((gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t22.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4)) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t24.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4))) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t25.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4)))/x4(uint8(3)))) + (((gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t22.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4)) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t24.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4))) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t25.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4)))/x4(uint8(3))))/x4(uint8(3))))
+
+
         if (op->name == Call::gpu_coordinate_load) {
             // This intrinsic takes four arguments
             // gpu_coordinate_load(<tex name>, <name>, <buffer>, <x>, <y>, <c>)
@@ -394,13 +435,26 @@ void CodeGen_RS_Dev::visit(const Call *op) {
                 (op->type.code == Type::UInt || op->type.code == Type::Float) &&
                 (op->type.width >= 1 && op->type.width <= 4));
 
-            internal_assert(op->args[2].type().width == 1)
-                << "gpu_coordinate_load argument 2 is not scalar";
-            internal_assert(op->args[3].type().width == 1)
-                << "gpu_coordinate_load argument 3 is not scalar";
+            Expr x = op->args[2];
+            if (const Broadcast *b = x.as<Broadcast>()) {
+                x = b->value;
+            }
+            debug(2) << "x=" << x << "\n";
+            Expr y = op->args[3];
+            if (const Broadcast *b = y.as<Broadcast>()) {
+                y = b->value;
+            }
 
-            debug(2) << "rsGetElementAt_uchar4(input, " << op->args[2] << ", "
-                     << op->args[3] << ")\n";
+            // internal_assert(op->args[2].type().width == 1)
+            //     << "gpu_coordinate_load argument 2 is not scalar";
+            // internal_assert(op->args[3].type().width == 1)
+            //     << "gpu_coordinate_load argument 3 is not scalar";
+
+            debug(2) << "rsGetElementAt_uchar4(input, " << x << ", " << y
+                     << ")\n";
+
+            Expr c = op->args[4];
+            // TOOD: ramp over c
 
             llvm::Function *rsGetElementAt_uchar4 = module->getFunction(
                 "_Z21rsGetElementAt_uchar413rs_allocationjj");
@@ -413,8 +467,8 @@ void CodeGen_RS_Dev::visit(const Call *op) {
                 << "Cant' find _Z20rsGetElementAt_uchar13rs_allocationjj "
                    "function";
 
-            vector<Value *> args = vec(sym_get("input"), codegen(op->args[2]),
-                                       codegen(op->args[3]));
+            vector<Value *> args =
+                vec(sym_get("input"), codegen(x), codegen(y));
 
             debug(2) << "Generating " << op->type.width
                      << "byte-wide GetElement call with " << args.size()
@@ -454,8 +508,11 @@ void CodeGen_RS_Dev::visit(const Call *op) {
                 y = b->value;
             }
             debug(2) << "y=" << y << "\n";
+            Expr c = op->args[4];
+            // TOOD: ramp over c
+            Expr set_value = op->args[5];
 
-            vector<Value *> args = vec(sym_get("result"), codegen(op->args[4]),
+            vector<Value *> args = vec(sym_get("result"), codegen(set_value),
                                        codegen(x), codegen(y));
 
             debug(2) << "Generating " << op->type.width
