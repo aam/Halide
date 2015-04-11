@@ -360,7 +360,7 @@ std::string Target::to_string() const {
       "cuda", "cuda_capability_30", "cuda_capability_32", "cuda_capability_35", "cuda_capability_50",
       "opencl", "cl_doubles",
       "opengl", "rs",
-      "user_context"
+      "user_context",
       "register_metadata"
   };
   internal_assert(sizeof(feature_names) / sizeof(feature_names[0]) == FeatureEnd);
