@@ -142,8 +142,8 @@ struct Target {
         return has_feature(CUDA) || has_feature(OpenCL) || has_feature(RS);
     }
 
-    /** GPU api uses coordinate-based gpu stores/loads. */
-    bool has_gpu_coordinate_feature() const {
+    /** Some device apis use coordinate-based stores/loads. */
+    bool has_coordinates_feature() const {
         return has_feature(OpenGL) || has_feature(RS);
     }
 

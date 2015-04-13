@@ -385,7 +385,7 @@ class InjectBufferCopies : public IRMutator {
                 Expr new_load = Load::make(l->type, l->name, new_index, Buffer(), Parameter());
                 expr = Call::make(op->type, op->name, vec(new_load), Call::Intrinsic);
             }
-        } else if (op->name == Call::gpu_coordinate_load && op->call_type == Call::Intrinsic) {
+        } else if (op->name == Call::coordinates_load && op->call_type == Call::Intrinsic) {
             // counts as a device read
             internal_assert(device_api == DeviceAPI::GLSL || device_api == DeviceAPI::RS);
             const int BUFFER_ARG = 2;
@@ -396,7 +396,7 @@ class InjectBufferCopies : public IRMutator {
             debug(4) << "Adding coordinate read via gpu_coordinate_load for " << buffer_var->name << "\n";
             state[buf_name].devices_reading.insert(device_api);
             IRMutator::visit(op);
-        } else if (op->name == Call::gpu_coordinate_store && op->call_type == Call::Intrinsic) {
+        } else if (op->name == Call::coordinates_store && op->call_type == Call::Intrinsic) {
             // counts as a device store
             internal_assert(device_api == DeviceAPI::GLSL || device_api == DeviceAPI::RS);
             internal_assert(op->args.size() >= 2);
