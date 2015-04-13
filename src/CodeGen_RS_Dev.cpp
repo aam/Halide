@@ -435,12 +435,12 @@ void CodeGen_RS_Dev::visit(const Call *op) {
                 (op->type.code == Type::UInt || op->type.code == Type::Float) &&
                 (op->type.width >= 1 && op->type.width <= 4));
 
-            Expr x = op->args[2];
+            Expr x = op->args[3];
             if (const Broadcast *b = x.as<Broadcast>()) {
                 x = b->value;
             }
             debug(2) << "x=" << x << "\n";
-            Expr y = op->args[3];
+            Expr y = op->args[4];
             if (const Broadcast *b = y.as<Broadcast>()) {
                 y = b->value;
             }
@@ -453,7 +453,7 @@ void CodeGen_RS_Dev::visit(const Call *op) {
             debug(2) << "rsGetElementAt_uchar4(input, " << x << ", " << y
                      << ")\n";
 
-            Expr c = op->args[4];
+            Expr c = op->args[5];
             // TOOD: ramp over c
 
             llvm::Function *rsGetElementAt_uchar4 = module->getFunction(
