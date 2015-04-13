@@ -371,7 +371,7 @@ void CodeGen_RS_Dev::visit(const Free *f) {
 void CodeGen_RS_Dev::visit(const Call *op) {
     if (op->call_type == Call::Intrinsic) {
 
-    // gpu_coordinate_store(
+    // coordinates_store(
     //     x4("result"),
     //     x4(result.buffer),
     //     x4((result.s0.x.__block_id_x + result.min.0)),
@@ -381,7 +381,7 @@ void CodeGen_RS_Dev::visit(const Call *op) {
     //         (
     //             (
     //                 (
-    //                     gpu_coordinate_load(
+    //                     coordinates_load(
     //                         x4("input"),
     //                         x4("input"),
     //                         x4(input.buffer),
@@ -389,7 +389,7 @@ void CodeGen_RS_Dev::visit(const Call *op) {
     //                         x4((t23.s - input.min.1)),
     //                         ramp(0, 1, 4)
     //                     ) 
-    //                     + gpu_coordinate_load(
+    //                     + coordinates_load(
     //                         x4("input"),
     //                         x4("input"),
     //                         x4(input.buffer),
@@ -397,7 +397,7 @@ void CodeGen_RS_Dev::visit(const Call *op) {
     //                         x4((t23.s - input.min.1)),
     //                         ramp(0, 1, 4))
     //                 )
-    //                 + gpu_coordinate_load(
+    //                 + coordinates_load(
     //                     x4("input"),
     //                     x4("input"),
     //                     x4(input.buffer),
@@ -408,12 +408,12 @@ void CodeGen_RS_Dev::visit(const Call *op) {
     //             )/x4(uint8(3))
     //         ) 
     //         + 
-    //         (((gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t22.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4)) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t24.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4))) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t25.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4)))/x4(uint8(3)))) + (((gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t22.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4)) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t24.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4))) + gpu_coordinate_load(x4("input"), x4("input"), x4(input.buffer), x4((t25.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4)))/x4(uint8(3))))/x4(uint8(3))))
+    //         (((coordinates_load(x4("input"), x4("input"), x4(input.buffer), x4((t22.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4)) + coordinates_load(x4("input"), x4("input"), x4(input.buffer), x4((t24.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4))) + coordinates_load(x4("input"), x4("input"), x4(input.buffer), x4((t25.s - input.min.0)), x4((t26.s - input.min.1)), ramp(0, 1, 4)))/x4(uint8(3)))) + (((coordinates_load(x4("input"), x4("input"), x4(input.buffer), x4((t22.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4)) + coordinates_load(x4("input"), x4("input"), x4(input.buffer), x4((t24.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4))) + coordinates_load(x4("input"), x4("input"), x4(input.buffer), x4((t25.s - input.min.0)), x4((t27.s - input.min.1)), ramp(0, 1, 4)))/x4(uint8(3))))/x4(uint8(3))))
 
 
-        if (op->name == Call::gpu_coordinate_load) {
+        if (op->name == Call::coordinates_load) {
             // This intrinsic takes four arguments
-            // gpu_coordinate_load(<tex name>, <name>, <buffer>, <x>, <y>, <c>)
+            // coordinates_load(<tex name>, <name>, <buffer>, <x>, <y>, <c>)
             internal_assert(op->args.size() == 6);
 
             // The argument to the call is either a StringImm or a broadcasted
@@ -446,9 +446,9 @@ void CodeGen_RS_Dev::visit(const Call *op) {
             }
 
             // internal_assert(op->args[2].type().width == 1)
-            //     << "gpu_coordinate_load argument 2 is not scalar";
+            //     << "coordinates_load argument 2 is not scalar";
             // internal_assert(op->args[3].type().width == 1)
-            //     << "gpu_coordinate_load argument 3 is not scalar";
+            //     << "coordinates_load argument 3 is not scalar";
 
             debug(2) << "rsGetElementAt_uchar4(input, " << x << ", " << y
                      << ")\n";
@@ -483,7 +483,7 @@ void CodeGen_RS_Dev::visit(const Call *op) {
                 builder->CreateCall(op->type.width == 1 ? rsGetElementAt_uchar
                                                         : rsGetElementAt_uchar4,
                                     args);
-        } else if (op->name == Call::gpu_coordinate_store) {
+        } else if (op->name == Call::coordinates_store) {
 
             llvm::Function *rsSetElementAt_uchar4 = module->getFunction(
                 "_Z21rsSetElementAt_uchar413rs_allocationDv4_hjj");
