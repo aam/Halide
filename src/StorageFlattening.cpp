@@ -282,6 +282,11 @@ private:
         return result;
     }
 
+    Expr flatten_image_intrinsic(const Call *image_intrinsic) {
+        debug(4) << "unimplemented flatten_image_intrinsic called for " << image_intrinsic;
+        return image_intrinsic;
+    }
+
     void visit(const Provide *provide) {
         Stmt result;
 
@@ -317,16 +322,21 @@ private:
     void visit(const Call *call) {
 
         if (call->call_type == Call::Extern || call->call_type == Call::Intrinsic) {
-            vector<Expr> args(call->args.size());
-            bool changed = false;
-            for (size_t i = 0; i < args.size(); i++) {
-                args[i] = mutate(call->args[i]);
-                if (!args[i].same_as(call->args[i])) changed = true;
-            }
-            if (!changed) {
-                expr = call;
+            if (call->name == Call::image_load || call->name == Call::image_store) {
+                // should be processed like single-valued Provide instances
+                expr = flatten_image_intrinsic(call);
             } else {
-                expr = Call::make(call->type, call->name, args, call->call_type);
+                vector<Expr> args(call->args.size());
+                bool changed = false;
+                for (size_t i = 0; i < args.size(); i++) {
+                    args[i] = mutate(call->args[i]);
+                    if (!args[i].same_as(call->args[i])) changed = true;
+                }
+                if (!changed) {
+                    expr = call;
+                } else {
+                    expr = Call::make(call->type, call->name, args, call->call_type);
+                }
             }
         } else {
             string name = call->name;

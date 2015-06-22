@@ -1,0 +1,199 @@
+I/halide  (21679): RS: halide_renderscript_initialize_kernels (user_context: 0x0, state_ptr: 0xb6f03770, program: 0xb6f009a0, size: 2076
+V/halide_rs(21679): Couldn't initialize dispatchTab.Allocation3DRead
+V/halide_rs(21679): Successfully loaded libRS.so
+V/halide_rs(21679): Created device 0xb4837190
+V/RenderScript(21679): 0xb4805c00 Launching thread(s), CPUs 4
+V/RenderScript(21679): Successfully loaded runtime: libRSDriver_adreno.so
+V/halide_rs(21679): Created context 0xb4805c00
+I/halide  (21679): RS:halide_renderscript_init_kernels cacheDir is /data/tmp
+W/Adreno-RS(21679): <rsdVendorScriptInitQCOM:768>: ERROR: rsdCompileBitcode returned -30
+I/halide  (21679): RS:halide_renderscript_init_kernels created script 0xb403a100
+I/halide  (21679):     Time: 5.491927e+00 ms
+I/halide  (21679): halide_copy_to_device 0xbefc79a8, host: 0xb48951c0, dev: 0, host_dirty: 1, dev_dirty:0
+I/halide  (21679): halide_device_malloc started>>> buffer_t=0xbefc79a8 interface 0xb6f0303c host: 0xb48951c0, dev: 0, host_dirty: 1, dev_dirty:0 buf current interface: 0x0
+I/halide  (21679): RS: halide_renderscript_device_malloc (user_context: 0x0, buf: 0xbefc79a8)
+I/halide  (21679):   allocating planar buffer of 400 bytes, extents: 10x10x0x0 strides: 1x10x0x0 (4 bytes per element)
+I/halide  (21679):     Created 3d scalar type 0xb4403000 10x10x0
+I/halide  (21679):         Created allocation 0xb4401000 for type 0xb4403000 we just created
+I/halide  (21679): Creating device wrapper for interface 0xb6f0303c handle 0xb4401000 wrapper 0xb483b2f0
+I/halide  (21679):             Allocated dev_buffer(same thing as allocation) 0xb4401000 for type 0xb4403000
+I/halide  (21679):                 Time: 5.218230e-01 ms
+I/halide  (21679): halide_device_malloc finished<<< buffer_t 0xbefc79a8 with result 0
+I/halide  (21679): halide_copy_to_device 0xbefc79a8 host is dirty
+I/halide  (21679): RS: halide_renderscript_copy_to_device (user_context: 0x0, plain buffer_t buf: 0xbefc79a8)
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb4401000 at addr 0xb483b2f0
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb4401000 at addr 0xb483b2f0
+I/halide  (21679): RS: copied to device buf->dev=0xb4401000 10x10x0*4 4-byte float from 0xb48951c0 = 0.000000
+I/halide  (21679):     Time: 1.007290e-01 ms
+I/halide  (21679): halide_device_malloc started>>> buffer_t=0xbefc7410 interface 0xb6f0303c host: 0xb4895560, dev: 0, host_dirty: 0, dev_dirty:0 buf current interface: 0x0
+I/halide  (21679): RS: halide_renderscript_device_malloc (user_context: 0x0, buf: 0xbefc7410)
+I/halide  (21679):   allocating planar buffer of 400 bytes, extents: 10x10x0x0 strides: 1x10x0x0 (4 bytes per element)
+I/halide  (21679):     Created 3d scalar type 0xb4403000 10x10x0
+I/halide  (21679):         Created allocation 0xb29fb000 for type 0xb4403000 we just created
+I/halide  (21679): Creating device wrapper for interface 0xb6f0303c handle 0xb29fb000 wrapper 0xb483b300
+I/halide  (21679):             Allocated dev_buffer(same thing as allocation) 0xb29fb000 for type 0xb4403000
+I/halide  (21679):                 Time: 2.771360e-01 ms
+I/halide  (21679): halide_device_malloc finished<<< buffer_t 0xbefc7410 with result 0
+I/halide  (21679): halide_copy_to_device 0xbefc7410, host: 0xb4895560, dev: 3028529920, host_dirty: 0, dev_dirty:0
+I/halide  (21679): RS: halide_renderscript_run (user_context: 0x0, entry: 1, blocks: 10x10x1, threads: 1x1x1, shmem: 0
+I/halide  (21679): Got context.
+I/halide  (21679): Got module 0xb403a100
+I/halide  (21679): RS:    halide_renderscript_run 0 4 [0xa ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 1 4 [0xa ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 2 4 [0x0 ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 3 4 [0x0 ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 4 4 [0xa ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 5 4 [0xa ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 6 4 [0x0 ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 7 4 [0x0 ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 8 4 [0xb483b2f0 ...] and this is buffer
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb4401000 at addr 0xb483b2f0
+I/halide  (21679): RS:    halide_renderscript_run 9 4 [0xb483b300 ...] and this is buffer
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29fb000 at addr 0xb483b300
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb4401000 at addr 0xb483b2f0
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29fb000 at addr 0xb483b300
+I/halide  (21679): RS: halide_renderscript_run starting script at slot 1 now with 0xb403a100 script  input: 0xb4401000 output: 0xb29fb000
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29fb000 at addr 0xb483b300
+I/halide  (21679): ScriptForEach completed
+D/RenderScript(21679): float x3 f {1065353216.000000, 0.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1073741824.000000, 1.000000, 1.000000}
+D/RenderScript(21679): float x3 f {0.000000, 0.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1077936128.000000, 2.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1082130432.000000, 3.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1084227584.000000, 4.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 5.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1065353216.000000, 1.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 6.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 7.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 8.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 9.000000, 1.000000}
+D/RenderScript(21679): float x3 f {1073741824.000000, 2.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1073741824.000000, 0.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1077936128.000000, 1.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1082130432.000000, 2.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1084227584.000000, 3.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1077936128.000000, 3.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 4.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 5.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 6.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 7.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1082130432.000000, 4.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 8.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 9.000000, 2.000000}
+D/RenderScript(21679): float x3 f {1077936128.000000, 0.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1084227584.000000, 5.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1082130432.000000, 1.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1084227584.000000, 2.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 3.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 4.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 6.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 5.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 6.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 7.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 7.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 8.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 9.000000, 3.000000}
+D/RenderScript(21679): float x3 f {1082130432.000000, 0.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1084227584.000000, 1.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 8.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 2.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 3.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 4.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 9.000000, 0.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 5.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 6.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 7.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 8.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1084227584.000000, 0.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1095761920.000000, 9.000000, 4.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 0.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 1.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 2.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1086324736.000000, 1.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 3.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 4.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 5.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 2.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 6.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1095761920.000000, 7.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1096810496.000000, 8.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1097859072.000000, 9.000000, 6.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 3.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1088421888.000000, 0.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 1.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 2.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 3.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 4.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 4.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 5.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1095761920.000000, 6.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 5.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1096810496.000000, 7.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1097859072.000000, 8.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1098907648.000000, 9.000000, 7.000000}
+D/RenderScript(21679): float x3 f {1090519040.000000, 0.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 6.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 1.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 2.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 3.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 4.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1095761920.000000, 5.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 7.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1096810496.000000, 6.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1097859072.000000, 7.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1098907648.000000, 8.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1095761920.000000, 8.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1099431936.000000, 9.000000, 8.000000}
+D/RenderScript(21679): float x3 f {1091567616.000000, 0.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1092616192.000000, 1.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1093664768.000000, 2.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1096810496.000000, 9.000000, 5.000000}
+D/RenderScript(21679): float x3 f {1094713344.000000, 3.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1095761920.000000, 4.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1096810496.000000, 5.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1097859072.000000, 6.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1098907648.000000, 7.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1099431936.000000, 8.000000, 9.000000}
+D/RenderScript(21679): float x3 f {1099956224.000000, 9.000000, 9.000000}
+I/halide  (21679): ContextFinish completed
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29fb000 at addr 0xb483b300
+I/halide  (21679): SyncAll for output_arg completed
+I/halide  (21679):     Time: 2.810833e+00 ms
+I/halide  (21679): halide_copy_to_device 0xbefc79f0, host: 0xb4895380, dev: 0, host_dirty: 0, dev_dirty:0
+I/halide  (21679): halide_device_malloc started>>> buffer_t=0xbefc79f0 interface 0xb6f0303c host: 0xb4895380, dev: 0, host_dirty: 0, dev_dirty:0 buf current interface: 0x0
+I/halide  (21679): RS: halide_renderscript_device_malloc (user_context: 0x0, buf: 0xbefc79f0)
+I/halide  (21679):   allocating planar buffer of 400 bytes, extents: 10x10x0x0 strides: 1x10x0x0 (4 bytes per element)
+I/halide  (21679):     Created 3d scalar type 0xb4403000 10x10x0
+I/halide  (21679):         Created allocation 0xb29f5000 for type 0xb4403000 we just created
+I/halide  (21679): Creating device wrapper for interface 0xb6f0303c handle 0xb29f5000 wrapper 0xb483b310
+I/halide  (21679):             Allocated dev_buffer(same thing as allocation) 0xb29f5000 for type 0xb4403000
+I/halide  (21679):                 Time: 7.888540e-01 ms
+I/halide  (21679): halide_device_malloc finished<<< buffer_t 0xbefc79f0 with result 0
+I/halide  (21679): halide_copy_to_device 0xbefc79f0, host: 0xb4895380, dev: 3028529936, host_dirty: 0, dev_dirty:0
+I/halide  (21679): halide_copy_to_device 0xbefc7410, host: 0xb4895560, dev: 3028529920, host_dirty: 0, dev_dirty:1
+I/halide  (21679): RS: halide_renderscript_run (user_context: 0x0, entry: 2, blocks: 10x10x1, threads: 1x1x1, shmem: 0
+I/halide  (21679): Got context.
+I/halide  (21679): Got module 0xb403a100
+I/halide  (21679): RS:    halide_renderscript_run 0 4 [0xa ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 1 4 [0xa ...] this is not a buffer
+I/halide  (21679): RS:    halide_renderscript_run 2 4 [0xb483b300 ...] and this is buffer
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29fb000 at addr 0xb483b300
+I/halide  (21679): RS:    halide_renderscript_run 3 4 [0xb483b310 ...] and this is buffer
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29f5000 at addr 0xb483b310
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29fb000 at addr 0xb483b300
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29f5000 at addr 0xb483b310
+I/halide  (21679): RS: halide_renderscript_run starting script at slot 2 now with 0xb403a100 script  input: 0xb29fb000 output: 0xb29f5000
+I/halide  (21679): Getting device handle for interface 0xb6f0303c device_handle 0xb29f5000 at addr 0xb483b310
+I/halide  (21679): ScriptForEach completed
+D/RenderScript(21679): float x3 g {1099956224.000000, 0.000000, 0.000000}
+D/RenderScript(21679): float x3 g {0.000000, 0.000000, 1.000000}
+F/libc    (21679): Fatal signal 11 (SIGSEGV), code 1, fault addr 0x58 in tid 21682 (test-rs)
+D/RenderScript(21679): float x3 g {0.000000, 0.000000, 2.000000}
+F/libc    (21679): Fatal signal 11 (SIGSEGV), code 1, fault addr 0x58 in tid 21681 (test-rs)
+F/libc    (21679): Fatal signal 11 (SIGSEGV), code 1, fault addr 0x58 in tid 21683 (test-rs)
+D/RenderScript(21679): float x3 g {0.000000, 0.000000, 3.000000}
+F/libc    (21679): Fatal signal 11 (SIGSEGV), code 1, fault addr 0x58 in tid 21680 (test-rs)
+I/DEBUG   (  358): pid: 21679, tid: 21682, name: test-rs  >>> ./test-rs <<<
+W/NativeCrashListener(  939): Couldn't find ProcessRecord for pid 21679
+E/        (  358): tid 21683 does not exist in pid 21679. ignoring debug request
+E/        (  358): tid 21681 does not exist in pid 21679. ignoring debug request

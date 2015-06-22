@@ -725,6 +725,8 @@ WEAK int halide_renderscript_device_free(void *user_context, buffer_t *buf) {
     debug(user_context) << "    non-implemented RS device free "
                         << (void *)(dev_ptr) << "\n";
 
+    buf->dev = 0;
+
 #ifdef DEBUG_RUNTIME
     uint64_t t_after = halide_current_time_ns(user_context);
     debug(user_context) << "    Time: " << (t_after - t_before) / 1.0e6
@@ -812,7 +814,7 @@ WEAK int halide_renderscript_device_malloc(void *user_context, buffer_t *buf) {
 
     if (buf->dev) {
         // This buffer already has a device allocation
-        debug(user_context) << "renderscript_device_malloc: This buffer already has a "
+        debug(user_context) << "  renderscript_device_malloc: This buffer already has a "
                                "device allocation\n";
         return 0;
     }
@@ -820,8 +822,8 @@ WEAK int halide_renderscript_device_malloc(void *user_context, buffer_t *buf) {
     halide_assert(user_context, buf->stride[0] >= 0 && buf->stride[1] >= 0 &&
                                     buf->stride[2] >= 0 && buf->stride[3] >= 0);
 
-    debug(user_context) << "    allocating "
-                        << (is_interleaved_rgba_buffer_t(buf)? "interleaved": "plain")
+    debug(user_context) << "  allocating "
+                        << (is_interleaved_rgba_buffer_t(buf)? "interleaved": "planar")
                         << " buffer of " << (int64_t)size << " bytes, "
                         << "extents: " << buf->extent[0] << "x"
                         << buf->extent[1] << "x" << buf->extent[2] << "x"
@@ -837,8 +839,9 @@ WEAK int halide_renderscript_device_malloc(void *user_context, buffer_t *buf) {
 
     void *typeID = NULL;
     //
-    //  Support two element types:
+    //  Support three element types:
     //  - single unsigned 8-bit;
+    //  - two-byte unsigned int;
     //  - 32-bit float;
     //
     //  Support two types of buffers:
@@ -852,11 +855,14 @@ WEAK int halide_renderscript_device_malloc(void *user_context, buffer_t *buf) {
         case 1:
             datatype = RS_TYPE_UNSIGNED_8;
             break;
+        case 2:
+            datatype = RS_TYPE_UNSIGNED_16;
+            break;
         case 4:
             datatype = RS_TYPE_FLOAT_32;
             break;
         default:
-            error(user_context) << "RS: Unsupported element type of size " << buf->elem_size << "\n";
+            error(user_context) << "    RS: Unsupported element type of size " << buf->elem_size << "\n";
     }
 
     if (is_interleaved_rgba_buffer_t(buf)) {
@@ -871,39 +877,44 @@ WEAK int halide_renderscript_device_malloc(void *user_context, buffer_t *buf) {
             0, false
             /*mDimMipmaps*/,
             false /*mDimFaces*/, 0);
+        debug(user_context) << "    Created 2d 4-vectorized type " << typeID << " " << buf->extent[0] << "x" << buf->extent[1] << "\n";
     } else {
         void *elementID_A = Context::dispatch->ElementCreate(
-            ctx.mContext, datatype, RS_KIND_PIXEL_A, true,
+            ctx.mContext, datatype, RS_KIND_USER, true,
             1 /* vecSize */);
         typeID = Context::dispatch->TypeCreate(ctx.mContext, elementID_A,
                                                buf->extent[0], buf->extent[1],
                                                buf->extent[2], false
                                                /*mDimMipmaps*/,
                                                false /*mDimFaces*/, 0);
+        debug(user_context) << "    Created 3d scalar type " << typeID << " " << buf->extent[0] << "x" << buf->extent[1] << "x" << buf->extent[2] << "\n";
     }
-    debug(user_context) << "Created type " << typeID << "\n";
 
     void *p = Context::dispatch->AllocationCreateTyped(
         ctx.mContext, typeID, RS_ALLOCATION_MIPMAP_NONE /*mipmaps*/,
-        RS_ALLOCATION_USAGE_SCRIPT /*usage*/, 0);
+        RS_ALLOCATION_USAGE_SCRIPT | RS_ALLOCATION_USAGE_SHARED /*usage*/, 0);
     if (p == NULL) {
-        error(user_context) << "RS: AllocationCreateTyped failed\n";
+        error(user_context) << "        RS: AllocationCreateTyped failed\n";
         return -1;
     } else {
-        debug(user_context) << (void *)p << "\n";
+        debug(user_context) << "        Created allocation " << (void *)p << " for type " << typeID << " we just created\n";
     }
     buf->dev = halide_new_device_wrapper((uint64_t)p, &renderscript_device_interface);
     if (buf->dev == 0) {
-        error(user_context) << "RS: out of memory allocating device wrapper.\n";
+        error(user_context) << "        RS: out of memory allocating device wrapper.\n";
         return -1;
     }
-    debug(user_context) << "Allocated dev_buffer " << p << "\n";
+    debug(user_context) << "            Allocated dev_buffer(same thing as allocation) " << p << " for type " << typeID << "\n";
 
 #ifdef DEBUG_RUNTIME
     uint64_t t_after = halide_current_time_ns(user_context);
-    debug(user_context) << "    Time: " << (t_after - t_before) / 1.0e6
+    debug(user_context) << "                Time: " << (t_after - t_before) / 1.0e6
                         << " ms\n";
 #endif
+
+    // void *module = ((module_state *)state_ptr)->module;
+
+    // Context::dispatch->ScriptSetVarObj(ctx.mContext, id, rs_object_slots->size()-1, findAllocation(args[i].name).id)
 
     return RS_SUCCESS;
 }
@@ -912,7 +923,7 @@ WEAK int halide_renderscript_copy_to_device(void *user_context, buffer_t *buf) {
     debug(user_context) << "RS: halide_renderscript_copy_to_device (user_context: "
                         << user_context << ", "
                         << (is_interleaved_rgba_buffer_t(buf)? "interleaved": "plain")
-                        << " buf: " << buf << ")\n";
+                        << " buffer_t buf: " << buf << ")\n";
 
     Context ctx(user_context);
     if (ctx.error != RS_SUCCESS) {
@@ -925,13 +936,13 @@ WEAK int halide_renderscript_copy_to_device(void *user_context, buffer_t *buf) {
 
     halide_assert(user_context, buf->host && buf->dev);
 
-    if (is_interleaved_rgba_buffer_t(buf)) {
+    if (is_interleaved_rgba_buffer_t(buf) || (buf->extent[2] == 0)) {
         Context::dispatch->Allocation2DData(
             ctx.mContext, (void *)halide_get_device_handle(buf->dev), 0 /*xoff*/,
             0 /*yoff*/, 0 /*mSelectedLOD*/, RS_ALLOCATION_CUBEMAP_FACE_POSITIVE_X,
             buf->extent[0] /*w*/, buf->extent[1] /*h*/, buf->host,
-            buf->extent[0] * buf->extent[1] * buf->extent[2] * buf->elem_size,
-            buf->extent[0] * buf->extent[2] * buf->elem_size); /* hosts' stride */
+            buf->extent[0] * buf->extent[1] * max(1, buf->extent[2]) * buf->elem_size,
+            buf->extent[0] * max(1, buf->extent[2]) * buf->elem_size); /* hosts' stride */
     } else {
         Context::dispatch->Allocation3DData(
             ctx.mContext, (void *)halide_get_device_handle(buf->dev), 0 /*xoff*/,
@@ -945,8 +956,8 @@ WEAK int halide_renderscript_copy_to_device(void *user_context, buffer_t *buf) {
                         << ((void *)halide_get_device_handle(buf->dev)) << " "
                         << buf->extent[0] << "x" << buf->extent[1] << "x"
                         << buf->extent[2] << "*" << buf->elem_size
-                        << " bytes from " << buf->host << ": "
-                        << (*(int8_t *)buf->host) << "\n";
+                        << (buf->elem_size == 4? " 4-byte float" : " 2-byte short") << " from " << buf->host << " = "
+                        << (buf->elem_size == 4? (*(float*)buf->host): (*(uint16_t*)buf->host)) << "\n";
 
 #ifdef DEBUG_RUNTIME
     uint64_t t_after = halide_current_time_ns(user_context);
@@ -988,14 +999,22 @@ WEAK int halide_renderscript_copy_to_host(void *user_context, buffer_t *buf) {
 
     debug(user_context) << "AllocationSyncAll done\n";
 
-    if (is_interleaved_rgba_buffer_t(buf)) {
+    if (is_interleaved_rgba_buffer_t(buf) || (buf->extent[2] == 0)) {
         halide_assert(user_context, Context::dispatch->Allocation2DRead != NULL);
+        debug(user_context) << "Starting Allocation2DRead byte size=" <<
+            (buf->extent[0] * buf->extent[1] * max(1, buf->extent[2]) * buf->elem_size)
+            << " hosts stride=" << (buf->extent[0] * max(1, buf->extent[2]) * buf->elem_size);
+        size_t byteSize = buf->extent[0] * buf->extent[1] * max(1, buf->extent[2]) * buf->elem_size;
+        debug(user_context) << "  byteSize=" << ((unsigned)byteSize) << "\n";
+        size_t hostsStride = buf->extent[0] * max(1, buf->extent[2]) * buf->elem_size;
+        debug(user_context) << "  hostsStride=" << ((unsigned)hostsStride) << "\n";
         Context::dispatch->Allocation2DRead(
             ctx.mContext, (void *)halide_get_device_handle(buf->dev), 0 /*xoff*/,
             0 /*yoff*/, 0 /*mSelectedLOD*/, RS_ALLOCATION_CUBEMAP_FACE_POSITIVE_X,
             buf->extent[0] /*w*/, buf->extent[1] /*h*/, buf->host,
-            buf->extent[0] * buf->extent[1] * buf->extent[2] * buf->elem_size /* byte size */,
-            buf->extent[0] * buf->extent[2] * buf->elem_size /* hosts' stride */);
+            byteSize /* byte size */,
+            hostsStride /* hosts' stride */);
+        debug(user_context) << "  done with Allocation2DRead\n";
     } else {
         debug(user_context) << "staring Allocation3DRead("
             << (void*)Context::dispatch->Allocation3DRead
@@ -1024,7 +1043,7 @@ WEAK int halide_renderscript_copy_to_host(void *user_context, buffer_t *buf) {
                         << buf->elem_size << " dev handle: "
                         << (void *)halide_get_device_handle(buf->dev)
                         << " into " << buf->host
-                        << " bytes: " << (*(int8_t *)buf->host) << "\n";
+                        << " 4-byte float " << (*(float*)buf->host) << "\n";
 
 #ifdef DEBUG_RUNTIME
     uint64_t t_after = halide_current_time_ns(user_context);
@@ -1059,6 +1078,7 @@ WEAK int halide_renderscript_device_sync(void *user_context, struct buffer_t *) 
     return RS_SUCCESS;
 }
 
+// Arguments for the function match actuals generated in CodeGen_GPU_Host.cpp launch_args
 WEAK int halide_renderscript_run(void *user_context, void *state_ptr,
                        const char *entry_name, int blocksX, int blocksY,
                        int blocksZ, int threadsX, int threadsY, int threadsZ,
@@ -1099,7 +1119,7 @@ WEAK int halide_renderscript_run(void *user_context, void *state_ptr,
         debug(user_context) << "RS:    halide_renderscript_run " << (int64_t)num_args << " "
                             << (int64_t)arg_sizes[num_args] << " ["
                             << (*((void **)args[num_args])) << " ...] "
-                            << arg_is_buffer[num_args] << "\n";
+                            << (arg_is_buffer[num_args]? "and this is buffer": "this is not a buffer") << "\n";
         if (arg_is_buffer[num_args] == 0) {
             int32_t arg_value = *((int32_t *)args[num_args]);
             Context::dispatch->ScriptSetVarV(ctx.mContext, module, num_args,
@@ -1132,13 +1152,23 @@ WEAK int halide_renderscript_run(void *user_context, void *state_ptr,
     Context::dispatch->ScriptForEach(
         ctx.mContext, module,
         slot,  // slot corresponding to entry point
-        (void *)halide_get_device_handle(input_arg),  // in_id
+        NULL, // (void *)halide_get_device_handle(input_arg),  // in_id
         (void *)halide_get_device_handle(output_arg),  // out_id
         NULL,  // usr
         0,  // usrLen
         NULL, 0);
 
     debug(user_context) << "ScriptForEach completed\n";
+
+    Context::dispatch->ContextFinish(ctx.mContext);
+
+    debug(user_context) << "ContextFinish completed\n";
+
+    Context::dispatch->AllocationSyncAll(
+        ctx.mContext, (void *)halide_get_device_handle(output_arg),
+        RS_ALLOCATION_USAGE_SCRIPT);
+
+    debug(user_context) << "SyncAll for output_arg completed\n";
 
 #ifdef DEBUG_RUNTIME
     uint64_t t_after = halide_current_time_ns(user_context);

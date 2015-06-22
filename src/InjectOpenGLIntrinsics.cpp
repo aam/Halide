@@ -51,11 +51,11 @@ private:
 
             // Normalize first two coordinates.
             for (size_t i = 0; i < 2; i++) {
-                int to_index = 2 + i;
-                int from_index = 2 + i * 2;
-                args[to_index] =
-                  (Cast::make(Float(32), mutate(call_args[from_index])) + 0.5f) /
-                  mutate(call_args[from_index + 1]);
+                size_t to_index = 2 + i;
+                size_t from_index = 2 + i * 2;
+                Expr coord = from_index < call_args.size()? call_args[from_index]: IntImm::make(0);
+                Expr coord_extent = (from_index + 1 < call_args.size())? call_args[from_index + 1]: IntImm::make(1);
+                args[to_index] = Cast::make(Float(32), mutate(coord) + 0.5f) / mutate(coord_extent);
             }
 
             // Confirm that user explicitly specified constant value for min
@@ -70,7 +70,11 @@ private:
                     << "Call set_min(2, min) or set_bounds(2, min, extent) to set.\n";
             }
 
-            Expr c_coordinate = mutate(call_args[2 + 2 * 2]);
+            size_t c_index = 2 + 2 * 2;
+            Expr coord = c_index < call_args.size()? call_args[c_index]: IntImm::make(0);
+            Expr coord_extent = c_index + 1 < call_args.size()? call_args[c_index + 1]: IntImm::make(1);
+
+            Expr c_coordinate = mutate(coord);
             args[4] = c_coordinate;
 
             Type load_type = call->type;

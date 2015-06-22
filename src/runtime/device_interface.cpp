@@ -39,6 +39,7 @@ WEAK int copy_to_host_already_locked(void *user_context, struct buffer_t *buf) {
             result = halide_error_code_no_device_interface;
         } else {
             result = interface->copy_to_host(user_context, buf);
+            debug(user_context) << "copy_to_host_already_locked copy_to_host completed for buf " << buf << " with result " << result << ". buf->dev=" << buf->dev << "\n";
             if (result == 0) {
                 buf->dev_dirty = false;
             } else {
@@ -110,7 +111,11 @@ WEAK int halide_copy_to_host(void *user_context, struct buffer_t *buf) {
 
     debug(NULL) << "halide_copy_to_host " << buf << "\n";
 
-    return copy_to_host_already_locked(user_context, buf);
+    int result = copy_to_host_already_locked(user_context, buf);
+
+    debug(NULL) << "halide_copy_to_host done " << buf << " with result " << result << " \n";
+
+    return result;
 }
 
 /** Copy image data from host memory to device memory. This should not be
@@ -200,7 +205,7 @@ WEAK int halide_device_sync(void *user_context, struct buffer_t *buf) {
 /** Allocate device memory to back a buffer_t. */
 WEAK int halide_device_malloc(void *user_context, struct buffer_t *buf, const halide_device_interface *interface) {
     const halide_device_interface *current_interface = halide_get_device_interface(buf->dev);
-    debug(user_context) << "halide_device_malloc: " << buf
+    debug(user_context) << "halide_device_malloc started>>> buffer_t=" << buf
                         << " interface " << interface
                         << " host: " << buf->host
                         << ", dev: " << buf->dev
@@ -219,6 +224,8 @@ WEAK int halide_device_malloc(void *user_context, struct buffer_t *buf, const ha
     interface->use_module();
     int result = interface->device_malloc(user_context, buf);
     interface->release_module();
+
+    debug(user_context) << "halide_device_malloc finished<<< buffer_t " << buf << " with result " << result << "\n";
 
     if (result) {
         return halide_error_code_device_malloc_failed;
@@ -243,7 +250,9 @@ WEAK int halide_device_free(void *user_context, struct buffer_t *buf) {
             // TODO: Exception safety...
             interface->use_module();
             int result = interface->device_free(user_context, buf);
+            debug(user_context) << "halide_device_free: freed device result=" << result << "\n";
             interface->release_module();
+            debug(user_context) << "halide_device_free: released module. Now buf->dev should be 0. Is it? " << buf->dev << "\n";
             halide_assert(user_context, buf->dev == 0);
             if (result) {
                 return halide_error_code_device_free_failed;
